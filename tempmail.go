@@ -154,7 +154,7 @@ func (tm *TempMail) RefreshAuth() error {
 		return fmt.Errorf("CANNOT POST %s", err)
 	}
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		return StatusCodeErr(resp.StatusCode)
 	}
 
@@ -169,6 +169,10 @@ func (tm *TempMail) RefreshAuth() error {
 	if err != nil {
 		return JsonParseErr(err)
 	}
+
+	if respBody.Token == "" {
+		return fmt.Errorf("EMPTY AUTH TOKEN")
+	}
 	tm.jwt = respBody.Token
 
 	return nil
@@ -177,10 +181,68 @@ func (tm *TempMail) RefreshAuth() error {
 // Creates the account on the TempMail server, this is the last bit of the builder functions
 func (tm *TempMail) CreateAccount() *TempMail {
 	tm.Err = tm.createAccount()
-	if tm.Err == nil {
+	// Fail fast
+	if tm.Err != nil {
 		return tm
 	}
 
 	tm.Err = tm.RefreshAuth()
 	return tm
+}
+
+// Gets the login data for the request headers
+func (tm *TempMail) getLoginData() string {
+	return "Bearer " + tm.jwt
+}
+
+// An email attachement
+type Attachment struct {
+	Name    string
+	Content []byte
+}
+
+// An email in the inbox
+type Email struct {
+	// Sender email address (from:)
+	Sender string
+	// People who recieved the email (to:)
+	Receipient []string
+	// CC field
+	CCs []string
+	// Subject line
+	Subject string
+	// Body, this is WYSWIG to the message
+	Body string
+	// Attachments
+	Attachments []Attachment
+	Seen        bool
+	id          string
+}
+
+// Gets the emails for an TempMail object
+func (tm *TempMail) GetEmails() ([]Email, error) {
+	req, err := http.NewRequest(http.MethodGet, MESSAGES_LINK, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(AUTH_HEADER, tm.getLoginData())
+
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("CANNOT GET MESSAGES %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, StatusCodeErr(resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, BodyReadErr(err)
+	}
+
+	return nil, nil
 }

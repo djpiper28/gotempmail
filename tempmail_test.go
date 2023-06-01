@@ -52,4 +52,13 @@ func TestTempMail(t *testing.T) {
 	if tempmail.Err != nil {
 		t.Errorf("tempmail err is %s", tempmail.Err)
 	}
+
+	emails, err := tempmail.GetEmails()
+	if err != nil {
+		t.Errorf("tempmail GetEmails () err %s", err)
+	}
+
+	if emails != nil {
+		t.Errorf("nil emails was expeceted as none have been sent")
+	}
 }
