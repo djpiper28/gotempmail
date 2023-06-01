@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
+// The TempMail struct stores the state of the tempmail
+// along with error information
 type TempMail struct {
-	email string
+	email    string
+	password string
+	// Any errors whilst building the TempMail are stored here
+	Err error
 }
 
 type domainJson struct {
@@ -36,8 +42,9 @@ type domainsJson struct {
 
 const (
 	// The base URL of the Temp Mail service, this might change tbh
-	BASE_URL            = "https://api.mail.tm"
-	DOMAIN_LIST_LINK    = BASE_URL + "/domains"
+	BASE_URL              = "https://api.mail.tm"
+	DOMAIN_LIST_LINK      = BASE_URL + "/domains"
+	ACCOUNT_REGISTER_LINK = BASE_URL + "/accounts"
 )
 
 // Gets all of the TempMail domains
@@ -75,4 +82,48 @@ func GetDomains() ([]string, error) {
 func New() *TempMail {
 	ret := TempMail{}
 	return &ret
+}
+
+// Sets the email address
+func (tm *TempMail) Address(address string) *TempMail {
+	tm.email = address
+	return tm
+}
+
+func (tm *TempMail) Password(password string) *TempMail {
+	tm.password = password
+	return tm
+}
+
+func (tm *TempMail) Validate() error {
+	if len(tm.password) == 0 {
+		return fmt.Errorf("NO PASSWORD")
+	}
+
+	if len(tm.email) == 0 {
+		return fmt.Errorf("NO EMAIL")
+	}
+
+	if len(tm.email) < 3 {
+		return fmt.Errorf("EMAIL '%s' CANNOT BE VALID", tm.email)
+	}
+
+	if !strings.Contains(tm.email, "@") {
+		return fmt.Errorf("NO @ IN EMAIL '%s'", tm.email)
+	}
+	return nil
+}
+
+func (tm *TempMail) createAccount() error {
+	err := tm.Validate()
+	if err != nil {
+		return fmt.Errorf("VALIDATION ERROR %s", err)
+	}
+
+	return nil
+}
+
+func (tm *TempMail) CreateAccount() *TempMail {
+	tm.Err = tm.createAccount()
+	return tm
 }
