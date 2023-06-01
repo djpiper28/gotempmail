@@ -1,9 +1,11 @@
 package gotempmail
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -41,6 +43,8 @@ type domainsJson struct {
 }
 
 const (
+	// Content type
+	JSON_CONTENT = "application/json"
 	// The base URL of the Temp Mail service, this might change tbh
 	BASE_URL              = "https://api.mail.tm"
 	DOMAIN_LIST_LINK      = BASE_URL + "/domains"
@@ -59,6 +63,7 @@ func GetDomains() ([]string, error) {
 			resp.StatusCode)
 	}
 
+	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("CANNOT READ BODY %s", err)
@@ -114,15 +119,48 @@ func (tm *TempMail) Validate() error {
 	return nil
 }
 
+type createAccountJson struct {
+	Address  string `json:"address"`
+	Password string `json:"password"`
+}
+
 func (tm *TempMail) createAccount() error {
 	err := tm.Validate()
 	if err != nil {
 		return fmt.Errorf("VALIDATION ERROR %s", err)
 	}
 
-	return nil
+	tmp := createAccountJson{Address: tm.email,
+		Password: tm.password}
+	msgBody, err := json.Marshal(tmp)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(ACCOUNT_REGISTER_LINK,
+		JSON_CONTENT,
+		bytes.NewBuffer(msgBody))
+	if err != nil {
+		return fmt.Errorf("CANNOT POST %s", err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("UNEXPECTED RETURN CODE (%d)",
+			resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("CANNOT READ BODY %s", err)
+	}
+
+	log.Print(string(body))
+
+	return fmt.Errorf("TODO")
 }
 
+// Creates the account on the TempMail server
 func (tm *TempMail) CreateAccount() *TempMail {
 	tm.Err = tm.createAccount()
 	return tm

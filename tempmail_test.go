@@ -1,7 +1,9 @@
 package gotempmail
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestTempMailNew(t *testing.T) {
@@ -39,5 +41,28 @@ func TestGetDomainsHasNoErr(t *testing.T) {
 
 	if len(ret) == 0 {
 		t.Errorf("no domains :(")
+	}
+}
+
+func TestCreateAccount(t *testing.T) {
+	domains, err := GetDomains()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if domains == nil {
+		t.Error("Nil Domains")
+	}
+	if len(domains) == 0 {
+		t.Error("No domains")
+	}
+
+	tempmail := New().
+		Address("testing" + fmt.Sprintf("%d",
+			time.Now().Unix()) + "@" + domains[0]).
+		Password("password123").
+		CreateAccount()
+	if tempmail.Err != nil {
+		t.Errorf("tempmail err is %s", tempmail.Err)
 	}
 }
