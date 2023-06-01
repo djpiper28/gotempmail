@@ -15,6 +15,7 @@ type TempMail struct {
 	email    string
 	password string
 	id       string
+	jwt      string
 	// Any errors whilst building the TempMail are stored here
 	Err error
 }
@@ -112,7 +113,7 @@ func (tm *TempMail) createAccount() error {
 	var respBody createAccountRespJson
 	err = json.Unmarshal(body, &respBody)
 	if err != nil {
-		return fmt.Errorf("CANNOT PARSE JSON %s", err)
+		return JsonParseErr(err)
 	}
 
 	if respBody.Deleted {
@@ -127,8 +128,59 @@ func (tm *TempMail) createAccount() error {
 	return nil
 }
 
+type authReqJson struct {
+	Address  string `json:"address"`
+	Password string `json:"password"`
+}
+
+type authRespJson struct {
+	Token string `json:"token"`
+}
+
+// Refreshes the authentication for the account, usually this does not get called
+func (tm *TempMail) RefreshAuth() error {
+	tmp := authReqJson{Address: tm.email,
+		Password: tm.password}
+	msgBody, err := json.Marshal(&tmp)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(AUTH_LINK,
+		JSON_CONTENT,
+		bytes.NewBuffer(msgBody))
+
+	if err != nil {
+		return fmt.Errorf("CANNOT POST %s", err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return StatusCodeErr(resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return BodyReadErr(err)
+	}
+
+	var respBody authRespJson
+	err = json.Unmarshal(body, &respBody)
+	if err != nil {
+		return JsonParseErr(err)
+	}
+	tm.jwt = respBody.Token
+
+	return nil
+}
+
 // Creates the account on the TempMail server, this is the last bit of the builder functions
 func (tm *TempMail) CreateAccount() *TempMail {
 	tm.Err = tm.createAccount()
+	if tm.Err == nil {
+		return tm
+	}
+
+	tm.Err = tm.RefreshAuth()
 	return tm
 }

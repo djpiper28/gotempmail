@@ -2,7 +2,6 @@ package gotempmail
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -50,7 +49,7 @@ func GetDomains() ([]string, error) {
 	var domains domainsJson
 	err = json.Unmarshal(body, &domains)
 	if err != nil {
-		return nil, fmt.Errorf("CANNOT PARSE DOMAINS %s", err)
+		return nil, JsonParseErr(err)
 	}
 
 	ret := make([]string, len(domains.Domains))
