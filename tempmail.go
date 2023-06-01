@@ -195,28 +195,30 @@ func (tm *TempMail) getLoginData() string {
 	return "Bearer " + tm.jwt
 }
 
-// An email attachement
-type Attachment struct {
-	Name    string
-	Content []byte
+type EmailAddr struct {
+	Address string `json:"address"`
+	Name    string `json:"name"`
 }
 
 // An email in the inbox
 type Email struct {
 	// Sender email address (from:)
-	Sender string
+	Sender EmailAddr `json:"from"`
 	// People who recieved the email (to:)
-	Receipient []string
-	// CC field
-	CCs []string
+	Receipient []EmailAddr `json:"to"`
 	// Subject line
-	Subject string
-	// Body, this is WYSWIG to the message
-	Body string
-	// Attachments
-	Attachments []Attachment
-	Seen        bool
-	id          string
+	Subject string `json:"subject"`
+	// The first bit of the body
+	Intro          string `json:"intro"`
+	HasAttachments bool   `json:"hasAttachments"`
+	Size           int    `json:"size"`
+	Seen           bool   `json:"seen"`
+	downloadUrl    string `json:"downloadUrl"`
+	id             string `json:"id"`
+}
+
+type emailsJson struct {
+	Emails []Email `json:"hydra:member"`
 }
 
 // Gets the emails for an TempMail object
@@ -239,10 +241,16 @@ func (tm *TempMail) GetEmails() ([]Email, error) {
 	}
 
 	defer resp.Body.Close()
-	_, err = io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, BodyReadErr(err)
 	}
 
-	return nil, nil
+	var emails emailsJson
+	err = json.Unmarshal(body, &emails)
+	if err != nil {
+		return nil, JsonParseErr(err)
+	}
+
+	return emails.Emails, nil
 }

@@ -58,7 +58,11 @@ func TestTempMail(t *testing.T) {
 		t.Errorf("tempmail GetEmails () err %s", err)
 	}
 
-	if emails != nil {
-		t.Errorf("nil emails was expeceted as none have been sent")
+	if emails == nil {
+		t.Errorf("emails are nil")
+	}
+
+	if len(emails) != 0 {
+		t.Errorf("there should not be any emails yet")
 	}
 }
