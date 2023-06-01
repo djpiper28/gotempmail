@@ -19,7 +19,8 @@ type TempMail struct {
 	Err error
 }
 
-// Inits a new TempMail instance
+// Inits a new TempMail instance, this is part of a builder type constructor,
+// You should also .Address().Password().CreateAccount() to get a usable object
 func New() *TempMail {
 	ret := TempMail{}
 	return &ret
@@ -31,11 +32,13 @@ func (tm *TempMail) Address(address string) *TempMail {
 	return tm
 }
 
+// Sets the password
 func (tm *TempMail) Password(password string) *TempMail {
 	tm.password = password
 	return tm
 }
 
+// Validates that the account can be made
 func (tm *TempMail) Validate() error {
 	if len(tm.password) == 0 {
 		return fmt.Errorf("NO PASSWORD")
