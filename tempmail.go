@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -15,6 +14,7 @@ import (
 type TempMail struct {
 	email    string
 	password string
+	id       string
 	// Any errors whilst building the TempMail are stored here
 	Err error
 }
@@ -60,6 +60,22 @@ type createAccountJson struct {
 	Password string `json:"password"`
 }
 
+type createAccountRespJson struct {
+	/* Other information that is not important
+	   @context: /contexts/Account
+	   @id: /accounts/6478c277752952794a10c466
+	   @type: Account
+	   address: testing1685635703@internetkeno.com
+	   createdAt: 2023-06-01T16:08:23+00:00
+	   quota: 40000000
+	   updatedAt: 2023-06-01T16:08:23+00:00
+	   used: 0
+	*/
+	Id       string `json:"id"`
+	Deleted  bool   `json:"isDeleted"`
+	Disabled bool   `json:"isDisabled"`
+}
+
 func (tm *TempMail) createAccount() error {
 	err := tm.Validate()
 	if err != nil {
@@ -91,9 +107,22 @@ func (tm *TempMail) createAccount() error {
 		return fmt.Errorf("CANNOT READ BODY %s", err)
 	}
 
-	log.Print(string(body))
+	var respBody createAccountRespJson
+	err = json.Unmarshal(body, &respBody)
+	if err != nil {
+		return fmt.Errorf("CANNOT PARSE JSON %s", err)
+	}
 
-	return fmt.Errorf("TODO")
+	if respBody.Deleted {
+		return fmt.Errorf("EMAIL DELETED")
+	}
+
+	if respBody.Disabled {
+		return fmt.Errorf("EMAIL DISABLED")
+	}
+
+	tm.id = respBody.Id
+	return nil
 }
 
 // Creates the account on the TempMail server
