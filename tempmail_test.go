@@ -12,8 +12,16 @@ func TestTempMailNew(t *testing.T) {
 }
 
 func TestGetDomainsHasNoErr(t *testing.T) {
-	_, err := GetDomains()
+	ret, err := GetDomains()
 	if err != nil {
-		t.Errorf("error was not expected %e", err)
+		t.Errorf("error was not expected %s", err)
+	}
+
+	if ret == nil {
+		t.Errorf("domains is nil")
+	}
+
+	if len(ret) == 0 {
+		t.Errorf("no domains :(")
 	}
 }
