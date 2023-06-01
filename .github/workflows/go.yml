@@ -25,4 +25,11 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      run: |
+        go test -v -benchmem -parallel 16 ./... -covermode=atomic -coverprofile=coverage.out
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        env: CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.out
