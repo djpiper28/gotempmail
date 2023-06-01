@@ -12,9 +12,9 @@ import (
 // The TempMail struct stores the state of the tempmail
 // along with error information
 type TempMail struct {
-	email    string
+	Email    string
 	password string
-	id       string
+	Id       string
 	jwt      string
 	// Any errors whilst building the TempMail are stored here
 	Err error
@@ -29,7 +29,7 @@ func New() *TempMail {
 
 // Sets the email address
 func (tm *TempMail) Address(address string) *TempMail {
-	tm.email = address
+	tm.Email = address
 	return tm
 }
 
@@ -45,16 +45,16 @@ func (tm *TempMail) Validate() error {
 		return fmt.Errorf("NO PASSWORD")
 	}
 
-	if len(tm.email) == 0 {
+	if len(tm.Email) == 0 {
 		return fmt.Errorf("NO EMAIL")
 	}
 
-	if len(tm.email) < 3 {
-		return fmt.Errorf("EMAIL '%s' CANNOT BE VALID", tm.email)
+	if len(tm.Email) < 3 {
+		return fmt.Errorf("EMAIL '%s' CANNOT BE VALID", tm.Email)
 	}
 
-	if !strings.Contains(tm.email, "@") {
-		return fmt.Errorf("NO @ IN EMAIL '%s'", tm.email)
+	if !strings.Contains(tm.Email, "@") {
+		return fmt.Errorf("NO @ IN EMAIL '%s'", tm.Email)
 	}
 	return nil
 }
@@ -86,7 +86,7 @@ func (tm *TempMail) createAccount() error {
 		return fmt.Errorf("VALIDATION ERROR %s", err)
 	}
 
-	tmp := createAccountJson{Address: tm.email,
+	tmp := createAccountJson{Address: tm.Email,
 		Password: tm.password}
 	msgBody, err := json.Marshal(tmp)
 	if err != nil {
@@ -124,7 +124,7 @@ func (tm *TempMail) createAccount() error {
 		return fmt.Errorf("EMAIL DISABLED")
 	}
 
-	tm.id = respBody.Id
+	tm.Id = respBody.Id
 	return nil
 }
 
@@ -139,7 +139,7 @@ type authRespJson struct {
 
 // Refreshes the authentication for the account, usually this does not get called
 func (tm *TempMail) RefreshAuth() error {
-	tmp := authReqJson{Address: tm.email,
+	tmp := authReqJson{Address: tm.Email,
 		Password: tm.password}
 	msgBody, err := json.Marshal(&tmp)
 	if err != nil {
@@ -213,8 +213,9 @@ type Email struct {
 	HasAttachments bool   `json:"hasAttachments"`
 	Size           int    `json:"size"`
 	Seen           bool   `json:"seen"`
-	downloadUrl    string `json:"downloadUrl"`
-	id             string `json:"id"`
+	DownloadUrl    string `json:"downloadUrl"`
+	Id             string `json:"id"`
+	CreatedAt      string `json:"createdAt"`
 }
 
 type emailsJson struct {
@@ -253,4 +254,58 @@ func (tm *TempMail) GetEmails() ([]Email, error) {
 	}
 
 	return emails.Emails, nil
+}
+
+type EmailAttachment struct {
+	Id          string `json:"id"`
+	Size        int    `json:"size"`
+	ContentType string `json:"contentType"`
+	Name        string `json:"filename"`
+	Encoding    string `json:"transferEncoding"`
+}
+
+type EmailDetails struct {
+	CC          []EmailAddr       `json:"cc"`
+	BCC         []EmailAddr       `json:"bcc"`
+	Body        string            `json:"text"`
+	Attachments []EmailAttachment `json:"attachments"`
+	Size        int               `json:"size"`
+	Subject     string            `json:"subject"`
+	Id          string            `json:"id"`
+	CreatedAt   string            `json:"createdAt"`
+	HTML        []string          `json:"html"`
+}
+
+// Fetches the contents of the email, including attachment details, and the body
+func (tm *TempMail) GetEmailDetails(email Email) (EmailDetails, error) {
+	req, err := http.NewRequest(http.MethodGet, MESSAGE_FETCH_LINK+email.Id, nil)
+	if err != nil {
+		return EmailDetails{}, err
+	}
+
+	req.Header.Set(AUTH_HEADER, tm.getLoginData())
+
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return EmailDetails{}, fmt.Errorf("CANNOT FETCH MESSAGE %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return EmailDetails{}, StatusCodeErr(resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return EmailDetails{}, BodyReadErr(err)
+	}
+
+	var details EmailDetails
+	err = json.Unmarshal(body, &details)
+	if err != nil {
+		return EmailDetails{}, JsonParseErr(err)
+	}
+
+	return details, nil
 }

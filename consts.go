@@ -10,5 +10,6 @@ const (
 	DOMAIN_LIST_LINK      = BASE_URL + "/domains"
 	ACCOUNT_REGISTER_LINK = BASE_URL + "/accounts"
 	MESSAGES_LINK         = BASE_URL + "/messages"
+	MESSAGE_FETCH_LINK    = BASE_URL + "/messages/"
 	AUTH_LINK             = BASE_URL + "/token"
 )
