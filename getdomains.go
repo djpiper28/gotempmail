@@ -38,14 +38,13 @@ func GetDomains() ([]string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("UNEXPECTED RETURN CODE (%d)",
-			resp.StatusCode)
+		return nil, StatusCodeErr(resp.StatusCode)
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("CANNOT READ BODY %s", err)
+		return nil, BodyReadErr(err)
 	}
 
 	var domains domainsJson

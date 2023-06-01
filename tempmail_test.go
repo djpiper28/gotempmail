@@ -29,7 +29,8 @@ func TestTempMailValidate(t *testing.T) {
 	}
 }
 
-func TestCreateAccount(t *testing.T) {
+func TestTempMail(t *testing.T) {
+	// Get domains
 	domains, err := GetDomains()
 	if err != nil {
 		t.Error(err)
@@ -42,6 +43,7 @@ func TestCreateAccount(t *testing.T) {
 		t.Error("No domains")
 	}
 
+	// Create the email
 	tempmail := New().
 		Address("testing" + fmt.Sprintf("%d",
 			time.Now().Unix()) + "@" + domains[0]).

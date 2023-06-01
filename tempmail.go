@@ -100,14 +100,13 @@ func (tm *TempMail) createAccount() error {
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("UNEXPECTED RETURN CODE (%d)",
-			resp.StatusCode)
+		return StatusCodeErr(resp.StatusCode)
 	}
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("CANNOT READ BODY %s", err)
+		return BodyReadErr(err)
 	}
 
 	var respBody createAccountRespJson
@@ -128,7 +127,7 @@ func (tm *TempMail) createAccount() error {
 	return nil
 }
 
-// Creates the account on the TempMail server
+// Creates the account on the TempMail server, this is the last bit of the builder functions
 func (tm *TempMail) CreateAccount() *TempMail {
 	tm.Err = tm.createAccount()
 	return tm
