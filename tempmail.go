@@ -37,8 +37,6 @@ type domainsJson struct {
 const (
 	// The base URL of the Temp Mail service, this might change tbh
 	BASE_URL            = "https://api.mail.tm"
-	DELETE_MESSAGE_LINK = BASE_URL + "/delete/id/md5/"
-	VIEW_MESSAGE_LINK   = BASE_URL + "/mail/id/md5/"
 	DOMAIN_LIST_LINK    = BASE_URL + "/domains"
 )
 
