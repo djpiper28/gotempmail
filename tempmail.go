@@ -16,27 +16,54 @@ type TempMail struct {
 	password string
 	Id       string
 	jwt      string
-	// Any errors whilst building the TempMail are stored here
-	Err error
+}
+
+type TempMailBuilder struct {
+	email    string
+	password string
 }
 
 // Inits a new TempMail instance, this is part of a builder type constructor,
 // You should also .Address().Password().CreateAccount() to get a usable object
-func New() *TempMail {
-	ret := TempMail{}
+func New() *TempMailBuilder {
+	ret := TempMailBuilder{}
 	return &ret
 }
 
 // Sets the email address
-func (tm *TempMail) Address(address string) *TempMail {
-	tm.Email = address
+func (tm *TempMailBuilder) Address(address string) *TempMailBuilder {
+	tm.email = address
 	return tm
 }
 
 // Sets the password
-func (tm *TempMail) Password(password string) *TempMail {
+func (tm *TempMailBuilder) Password(password string) *TempMailBuilder {
 	tm.password = password
 	return tm
+}
+
+// Creates the account on the TempMail server, this is the last bit of the builder functions
+func (builder *TempMailBuilder) Build() (*TempMail, error) {
+	tm := TempMail{}
+	tm.password = builder.password
+	tm.Email = builder.email
+	err := tm.createAccount()
+
+	// Fail fast
+	if err != nil {
+		return nil, err
+	}
+
+	err = tm.RefreshAuth()
+	if err != nil {
+		return nil, err
+	}
+
+	return &tm, err
+}
+
+func Init(email string, password string) (*TempMail, error) {
+	return New().Address(email).Password(password).Build()
 }
 
 // Validates that the account can be made
@@ -178,18 +205,6 @@ func (tm *TempMail) RefreshAuth() error {
 	return nil
 }
 
-// Creates the account on the TempMail server, this is the last bit of the builder functions
-func (tm *TempMail) CreateAccount() *TempMail {
-	tm.Err = tm.createAccount()
-	// Fail fast
-	if tm.Err != nil {
-		return tm
-	}
-
-	tm.Err = tm.RefreshAuth()
-	return tm
-}
-
 // Gets the login data for the request headers
 func (tm *TempMail) getLoginData() string {
 	return "Bearer " + tm.jwt
@@ -202,6 +217,7 @@ type EmailAddr struct {
 
 // An email in the inbox
 type Email struct {
+	Id string `json:"id"`
 	// Sender email address (from:)
 	Sender EmailAddr `json:"from"`
 	// People who recieved the email (to:)
@@ -214,7 +230,6 @@ type Email struct {
 	Size           int    `json:"size"`
 	Seen           bool   `json:"seen"`
 	DownloadUrl    string `json:"downloadUrl"`
-	Id             string `json:"id"`
 	CreatedAt      string `json:"createdAt"`
 }
 

@@ -19,14 +19,17 @@ func ExampleTest(t *testing.T) {
 	}
 
 	// Build the tempmail object and test for errors
-	tempmail := New().
+	tempmail, err := New().
 		Address("account" + fmt.Sprintf("%d",
 			time.Now().Unix()) + "@" + domains[0]).
 		Password("password123").
-		CreateAccount()
-	if tempmail.Err != nil {
-		t.Errorf("tempmail err is %s", tempmail.Err)
+		Build()
+	if err != nil {
+		t.Errorf("tempmail err is %s", err)
 	}
+
+	// You can also do
+	// other_tempmail, err := Init("email@test.com", "password")
 
 	// Imagine there was an email sent lmao
 	// Get emails
