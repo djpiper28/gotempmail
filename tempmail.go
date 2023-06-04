@@ -43,7 +43,7 @@ func (tm *TempMailBuilder) Password(password string) *TempMailBuilder {
 }
 
 // Creates the account on the TempMail server, this is the last bit of the builder functions
-func (builder *TempMailBuilder) Build() (*TempMail, error) {
+func (builder *TempMailBuilder) Build() (TempMail, error) {
 	tm := TempMail{}
 	tm.password = builder.password
 	tm.Email = builder.email
@@ -51,18 +51,18 @@ func (builder *TempMailBuilder) Build() (*TempMail, error) {
 
 	// Fail fast
 	if err != nil {
-		return nil, err
+		return tm, err
 	}
 
 	err = tm.RefreshAuth()
 	if err != nil {
-		return nil, err
+		return tm, err
 	}
 
-	return &tm, err
+	return tm, err
 }
 
-func Init(email string, password string) (*TempMail, error) {
+func Init(email string, password string) (TempMail, error) {
 	return New().Address(email).Password(password).Build()
 }
 
